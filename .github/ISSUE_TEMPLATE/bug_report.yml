@@ -1,0 +1,36 @@
+name: Reportar un error
+description: Describe un problema reproducible.
+title: "[Error]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Antes de continuar, busca si ya existe un reporte similar.
+  - type: textarea
+    id: expected
+    attributes:
+      label: Resultado esperado
+      description: ¿Qué esperabas que ocurriera?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Resultado observado
+      description: ¿Qué ocurrió? No incluyas tokens ni credenciales.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Pasos para reproducir
+      placeholder: 1. Ejecuté ...
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Versión de Python
+      placeholder: 3.12.14
+    validations:
+      required: true

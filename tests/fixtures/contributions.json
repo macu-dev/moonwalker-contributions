@@ -1,0 +1,26 @@
+{
+  "data": {
+    "user": {
+      "contributionsCollection": {
+        "contributionCalendar": {
+          "totalContributions": 4,
+          "weeks": [
+            {
+              "contributionDays": [
+                {"date": "2026-10-04", "contributionCount": 0, "contributionLevel": "NONE"},
+                {"date": "2026-10-05", "contributionCount": 1, "contributionLevel": "FIRST_QUARTILE"},
+                {"date": "2026-10-06", "contributionCount": 3, "contributionLevel": "FOURTH_QUARTILE"}
+              ]
+            },
+            {
+              "contributionDays": [
+                {"date": "2026-10-07", "contributionCount": 0, "contributionLevel": "NONE"},
+                {"date": "2026-10-08", "contributionCount": 0, "contributionLevel": "NONE"}
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,79 @@
+name: Update contributions animation
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+    inputs:
+      username:
+        description: GitHub username for this run (defaults to GITHUB_USERNAME)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-contributions-animation
+  cancel-in-progress: false
+
+jobs:
+  quality:
+    name: Quality checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install package and development tools
+        run: python -m pip install -e ".[dev]"
+      - name: Run Ruff
+        run: ruff check .
+      - name: Check formatting
+        run: ruff format --check .
+      - name: Check types
+        run: mypy --strict
+      - name: Run tests
+        run: pytest
+
+  update:
+    name: Generate and publish assets
+    needs: quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.CONTRIBUTIONS_TOKEN || github.token }}
+      MOONWALK_USERNAME: ${{ inputs.username || vars.GITHUB_USERNAME }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install package
+        run: python -m pip install .
+      - name: Generate contribution animation
+        run: |
+          if [ -z "$MOONWALK_USERNAME" ]; then
+            echo "Set the GITHUB_USERNAME repository variable or provide the workflow username input." >&2
+            exit 1
+          fi
+          moonwalk-contributions --username "$MOONWALK_USERNAME" --output-dir assets
+      - name: Publish changed assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- assets/moonwalk-contributions.gif assets/moonwalk-contributions.png
+          if git diff --cached --quiet; then
+            echo "Contribution assets are already up to date."
+            exit 0
+          fi
+          git commit -m "chore: update contribution animation"
+          git push
