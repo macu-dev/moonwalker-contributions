@@ -78,7 +78,10 @@ def _shared_palette(images: list[Image.Image]) -> Image.Image:
         frame_colors = image.getcolors(maxcolors=MAX_PALETTE_SOURCE_COLORS)
         if frame_colors is None:
             raise ValueError("Animation frame has too many colors to build a shared GIF palette.")
-        colors.update(color for _, color in frame_colors)
+        for _, color in frame_colors:
+            if not isinstance(color, tuple) or len(color) != 3:
+                raise ValueError("Animation frames must use RGB colors to build a shared GIF palette.")
+            colors.add((color[0], color[1], color[2]))
 
     palette_source = Image.new("RGB", (len(colors), 1))
     palette_source.putdata(sorted(colors))
