@@ -16,9 +16,17 @@ from moonwalk_contributions.github import (
     fetch_contribution_calendar,
     parse_contribution_calendar,
 )
-from moonwalk_contributions.render import COLORS, grid_layout, render_contribution_grid
+from moonwalk_contributions.render import COLORS, _load_font, grid_layout, render_contribution_grid
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "contributions.json"
+
+
+def test_render_font_supports_spanish_accented_letters() -> None:
+    """Accented Spanish letters use real glyphs instead of replacement boxes."""
+    font = _load_font(12)
+
+    assert bytes(font.getmask("ú")) != bytes(font.getmask("?"))
+    assert bytes(font.getmask("ñ")) != bytes(font.getmask("?"))
 
 
 def test_parse_calendar_preserves_weeks_dates_levels_and_empty_days() -> None:

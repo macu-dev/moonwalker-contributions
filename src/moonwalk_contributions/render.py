@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from math import pi, sin
+from pathlib import Path
 
 from PIL import Image, ImageColor, ImageDraw, ImageFont
 
@@ -19,6 +20,12 @@ GRID_BOTTOM = 20
 WEEKDAY_LABELS = {1: "lun", 3: "mié", 5: "vie"}
 MONTH_LABELS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
 Font = ImageFont.ImageFont | ImageFont.FreeTypeFont
+FONT_PATH = Path(__file__).parent / "fonts" / "IBMPlexSans.ttf"
+
+
+def _load_font(size: int) -> Font:
+    """Load the bundled font with full Spanish character support."""
+    return ImageFont.truetype(str(FONT_PATH), size=size)
 
 COLORS = {
     "background": "#100d20",
@@ -101,7 +108,7 @@ def render_contribution_grid(
     )
     _draw_stars(draw, width, height)
 
-    font = ImageFont.load_default(size=12)
+    font = _load_font(12)
     draw.text(
         (layout.origin_x, 12),
         f"{calendar.total_contributions:,}".replace(",", ".") + " contribuciones en el último año",

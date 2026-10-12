@@ -18,6 +18,9 @@ moonwalk-contributions = "moonwalk_contributions.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+moonwalk_contributions = ["fonts/*.ttf", "fonts/*.txt"]
+
 [tool.ruff]
 line-length = 120
 target-version = "py312"
