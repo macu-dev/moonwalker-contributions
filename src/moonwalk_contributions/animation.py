@@ -22,6 +22,8 @@ MOONWALK_FRAME_DURATION_MS = 50
 SAMPLES_PER_CELL = 4
 FINAL_POSE_DURATION_MS = 1_000
 ENDPOINT_FRAME_COUNT = MOONWALK_CYCLE_FRAMES + 1
+ENDING_GLIDE_DISTANCE = MOONWALK_SAMPLE_DISTANCE * 2
+ENDING_FRAME_COUNT = round(ENDING_GLIDE_DISTANCE / MOONWALK_SAMPLE_DISTANCE) + 1
 
 
 class FramePhase(StrEnum):
@@ -108,8 +110,16 @@ def build_animation(calendar: ContributionCalendar) -> AnimationSequence:
             durations.append(MOONWALK_FRAME_DURATION_MS)
 
     final_position = layout.cell_center(*traversal[-1])
-    _append_endpoint_moonwalk(calendar, frames, durations, final_position, FramePhase.MOONWALK_END)
-    final_pose_position = (final_position[0] - 56, final_position[1])
+    _append_endpoint_moonwalk(
+        calendar,
+        frames,
+        durations,
+        final_position,
+        FramePhase.MOONWALK_END,
+        distance=ENDING_GLIDE_DISTANCE,
+        frame_count=ENDING_FRAME_COUNT,
+    )
+    final_pose_position = (final_position[0] - ENDING_GLIDE_DISTANCE, final_position[1])
     frames.append(_render_frame(calendar, final_pose_position, FramePhase.FINAL_POSE, None, 0, "final"))
     durations.append(FINAL_POSE_DURATION_MS)
 
@@ -122,13 +132,16 @@ def _append_endpoint_moonwalk(
     durations: list[int],
     start: tuple[int, int],
     phase: FramePhase,
+    *,
+    distance: float = MOONWALK_CYCLE_FRAMES * MOONWALK_SAMPLE_DISTANCE,
+    frame_count: int = ENDPOINT_FRAME_COUNT,
 ) -> None:
     """Append one backward glide beside an endpoint, including its arrival."""
-    for sample in range(ENDPOINT_FRAME_COUNT):
-        distance = round(sample * MOONWALK_SAMPLE_DISTANCE)
-        position = (start[0] - distance, start[1])
+    for sample in range(frame_count):
+        travelled = round(sample * distance / (frame_count - 1)) if frame_count > 1 else 0
+        position = (start[0] - travelled, start[1])
         frames.append(
-            _render_frame(calendar, position, phase, None, distance / MOONWALK_SAMPLE_DISTANCE, "moonwalk", 1)
+            _render_frame(calendar, position, phase, None, travelled / MOONWALK_SAMPLE_DISTANCE, "moonwalk", 1)
         )
         durations.append(MOONWALK_FRAME_DURATION_MS)
 

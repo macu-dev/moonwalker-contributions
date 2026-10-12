@@ -1,6 +1,6 @@
 # Moonwalk Contributions
 
-Una animación del calendario de contribuciones de GitHub, recorrido por un moonwalker en pixel art. El bailarín avanza por toda la cuadrícula y enciende brevemente cada día que pisa.
+Una animación del calendario de contribuciones de GitHub, recorrido por un moonwalker en pixel art. El gráfico incluye los días y meses, el total anual y una escala de intensidad; el bailarín recorre cada casilla y enciende brevemente cada día que pisa.
 
 ![Moonwalk sobre una cuadrícula de contribuciones de GitHub](assets/moonwalk-contributions.gif)
 

@@ -8,6 +8,7 @@ import pytest
 from PIL import Image, ImageDraw
 
 from moonwalk_contributions.animation import (
+    ENDING_FRAME_COUNT,
     ENDPOINT_FRAME_COUNT,
     FINAL_POSE_DURATION_MS,
     MOONWALK_FRAME_DURATION_MS,
@@ -40,7 +41,7 @@ def test_moonwalk_continues_across_the_entire_grid() -> None:
     assert phases == (
         [FramePhase.MOONWALK_START] * ENDPOINT_FRAME_COUNT
         + [FramePhase.MOONWALK] * walk_frame_count
-        + [FramePhase.MOONWALK_END] * ENDPOINT_FRAME_COUNT
+        + [FramePhase.MOONWALK_END] * ENDING_FRAME_COUNT
         + [FramePhase.FINAL_POSE]
     )
     assert animation.durations_ms[-1] == FINAL_POSE_DURATION_MS

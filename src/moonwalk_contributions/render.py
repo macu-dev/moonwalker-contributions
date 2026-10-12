@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import date
 from math import pi, sin
 
-from PIL import Image, ImageColor, ImageDraw
+from PIL import Image, ImageColor, ImageDraw, ImageFont
 
 from moonwalk_contributions.models import ContributionCalendar, ContributionDay
 
@@ -16,6 +16,8 @@ CELL_SIZE = 10
 CELL_GAP = 4
 GRID_TOP = 88
 GRID_BOTTOM = 20
+WEEKDAY_LABELS = {1: "lun", 3: "mié", 5: "vie"}
+MONTH_LABELS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
 
 COLORS = {
     "background": "#100d20",
@@ -30,6 +32,8 @@ COLORS = {
     "accent": "#ff72bd",
     "horizon": "#432c64",
     "star": "#b78cda",
+    "label": "#b8adc9",
+    "legend": "#d9d2e3",
 }
 
 
@@ -96,6 +100,15 @@ def render_contribution_grid(
     )
     _draw_stars(draw, width, height)
 
+    font = ImageFont.load_default()
+    draw.text(
+        (layout.origin_x, 12),
+        f"{calendar.total_contributions:,}".replace(",", ".") + " contribuciones en el último año",
+        fill=COLORS["legend"],
+        font=font,
+    )
+    _draw_calendar_labels(draw, calendar, layout, width, font)
+
     for week_index, week in enumerate(calendar.weeks):
         for contribution in week:
             weekday = (contribution.day.weekday() + 1) % 7
@@ -131,7 +144,72 @@ def render_contribution_grid(
     if calendar.days:
         center_x, center_y = performer_at or _performer_anchor(calendar, layout)
         _draw_readme_sized_performer(image, center_x, center_y - 37, dancer_pose, step_index, facing)
+    _draw_activity_legend(draw, width, height, font)
     return image
+
+
+def _draw_calendar_labels(
+    draw: ImageDraw.ImageDraw,
+    calendar: ContributionCalendar,
+    layout: GridLayout,
+    width: int,
+    font: ImageFont.ImageFont,
+) -> None:
+    """Add GitHub-like weekday and month labels around the contribution grid."""
+    for weekday, label in WEEKDAY_LABELS.items():
+        bounds = draw.textbbox((0, 0), label, font=font)
+        label_width = bounds[2] - bounds[0]
+        center_y = layout.cell_center(0, weekday)[1]
+        draw.text(
+            (layout.origin_x - label_width - 6, center_y - (bounds[3] - bounds[1]) // 2),
+            label,
+            fill=COLORS["label"],
+            font=font,
+        )
+
+    previous_month: int | None = None
+    for week_index, week in enumerate(calendar.weeks):
+        if not week:
+            continue
+        month = week[0].day.month
+        if month == previous_month:
+            continue
+        previous_month = month
+        label = MONTH_LABELS[month - 1]
+        bounds = draw.textbbox((0, 0), label, font=font)
+        label_width = bounds[2] - bounds[0]
+        center_x = layout.cell_center(week_index, 0)[0]
+        left = max(layout.origin_x, min(width - label_width, center_x - label_width // 2))
+        draw.text((left, GRID_TOP - 18), label, fill=COLORS["label"], font=font)
+
+
+def _draw_activity_legend(
+    draw: ImageDraw.ImageDraw,
+    width: int,
+    height: int,
+    font: ImageFont.ImageFont,
+) -> None:
+    """Show the five activity levels as a compact scale below the calendar."""
+    low_label, high_label = "Menos", "Más"
+    low_bounds = draw.textbbox((0, 0), low_label, font=font)
+    high_bounds = draw.textbbox((0, 0), high_label, font=font)
+    low_width = low_bounds[2] - low_bounds[0]
+    high_width = high_bounds[2] - high_bounds[0]
+    swatch_size = 8
+    swatch_gap = 4
+    label_gap = 7
+    swatches_width = 5 * swatch_size + 4 * swatch_gap
+    total_width = low_width + label_gap + swatches_width + label_gap + high_width
+    x = (width - total_width) // 2
+    y = height - GRID_BOTTOM - 11
+    draw.text((x, y), low_label, fill=COLORS["label"], font=font)
+    x += low_width + label_gap
+    for color in ("grid_base", "FIRST_QUARTILE", "SECOND_QUARTILE", "THIRD_QUARTILE", "FOURTH_QUARTILE"):
+        draw.rounded_rectangle((x, y + 1, x + swatch_size, y + 1 + swatch_size), radius=2, fill=COLORS[color])
+        x += swatch_size + swatch_gap
+    x -= swatch_gap
+    x += label_gap
+    draw.text((x, y), high_label, fill=COLORS["label"], font=font)
 
 
 def _draw_readme_sized_performer(
