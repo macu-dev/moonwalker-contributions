@@ -10,7 +10,13 @@ from PIL import Image
 
 import moonwalk_contributions.assets as assets
 import moonwalk_contributions.pipeline as pipeline
-from moonwalk_contributions.animation import ENDPOINT_FRAME_COUNT, SAMPLES_PER_CELL, AnimationSequence, build_animation
+from moonwalk_contributions.animation import (
+    ENDING_FRAME_COUNT,
+    ENDPOINT_FRAME_COUNT,
+    SAMPLES_PER_CELL,
+    AnimationSequence,
+    build_animation,
+)
 from moonwalk_contributions.assets import save_animation
 from moonwalk_contributions.github import GitHubAPIError, parse_contribution_calendar
 from moonwalk_contributions.models import ContributionCalendar, ContributionDay
@@ -69,7 +75,7 @@ def test_full_year_animation_stays_within_readme_size_budget(tmp_path: Path) -> 
     generated = save_animation(sequence, tmp_path)
 
     with Image.open(generated.animation) as gif:
-        assert gif.n_frames == SAMPLES_PER_CELL * (53 * 7 - 1) + 1 + 2 * ENDPOINT_FRAME_COUNT + 1
+        assert gif.n_frames == (SAMPLES_PER_CELL * (53 * 7 - 1) + 1 + ENDPOINT_FRAME_COUNT + ENDING_FRAME_COUNT + 1)
     assert generated.animation.stat().st_size <= assets.MAX_GIF_SIZE_BYTES
 
 

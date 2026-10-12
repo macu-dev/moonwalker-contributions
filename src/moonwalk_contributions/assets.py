@@ -7,9 +7,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
+from PIL import Image
+
 from moonwalk_contributions.animation import AnimationSequence
 
 MAX_GIF_SIZE_BYTES = 3_000_000
+MAX_PALETTE_SOURCE_COLORS = 1_000_000
 
 
 @dataclass(frozen=True)
@@ -38,11 +41,13 @@ def save_animation(sequence: AnimationSequence, output_dir: Path) -> GeneratedAs
         temporary_fallback = _temporary_path(output_dir, ".png")
         temporary_paths.append(temporary_fallback)
         images = [frame.image for frame in sequence.frames]
-        images[0].save(
+        palette = _shared_palette(images)
+        gif_frames = [image.quantize(palette=palette, dither=Image.Dither.NONE) for image in images]
+        gif_frames[0].save(
             temporary_animation,
             format="GIF",
             save_all=True,
-            append_images=images[1:],
+            append_images=gif_frames[1:],
             duration=list(sequence.durations_ms),
             loop=0,
             optimize=True,
@@ -64,3 +69,17 @@ def save_animation(sequence: AnimationSequence, output_dir: Path) -> GeneratedAs
 def _temporary_path(output_dir: Path, suffix: str) -> Path:
     with NamedTemporaryFile(prefix=".moonwalk-", suffix=suffix, dir=output_dir, delete=False) as temporary_file:
         return Path(temporary_file.name)
+
+
+def _shared_palette(images: list[Image.Image]) -> Image.Image:
+    """Build one stable palette from every frame so GIF deltas compress well."""
+    colors: set[tuple[int, int, int]] = set()
+    for image in images:
+        frame_colors = image.getcolors(maxcolors=MAX_PALETTE_SOURCE_COLORS)
+        if frame_colors is None:
+            raise ValueError("Animation frame has too many colors to build a shared GIF palette.")
+        colors.update(color for _, color in frame_colors)
+
+    palette_source = Image.new("RGB", (len(colors), 1))
+    palette_source.putdata(sorted(colors))
+    return palette_source.quantize(colors=256, method=Image.Quantize.MEDIANCUT)
