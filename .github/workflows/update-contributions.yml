@@ -44,6 +44,7 @@ jobs:
     name: Generate and publish assets
     needs: quality
     runs-on: ubuntu-latest
+    environment: prod
     permissions:
       contents: write
     env:
