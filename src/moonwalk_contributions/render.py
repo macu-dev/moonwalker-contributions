@@ -27,6 +27,7 @@ def _load_font(size: int) -> Font:
     """Load the bundled font with full Spanish character support."""
     return ImageFont.truetype(str(FONT_PATH), size=size)
 
+
 COLORS = {
     "background": "#100d20",
     "grid_base": "#28223b",
