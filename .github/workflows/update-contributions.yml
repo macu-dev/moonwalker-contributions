@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       username:
-        description: GitHub username for this run (defaults to GITHUB_USERNAME)
+        description: GitHub username for this run (defaults to GH_USERNAME)
         required: false
         type: string
 
@@ -47,14 +47,14 @@ jobs:
     permissions:
       contents: write
     env:
-      MOONWALK_USERNAME: ${{ inputs.username || vars.GITHUB_USERNAME }}
+      MOONWALK_USERNAME: ${{ inputs.username || vars.GH_USERNAME }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
       - name: Require a GitHub username
         run: |
           if [ -z "$MOONWALK_USERNAME" ]; then
-            echo "Set the GITHUB_USERNAME repository variable or provide the workflow username input." >&2
+            echo "Set the GH_USERNAME repository variable or provide the workflow username input." >&2
             exit 1
           fi
       - name: Generate contribution animation
