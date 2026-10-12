@@ -47,25 +47,22 @@ jobs:
     permissions:
       contents: write
     env:
-      GITHUB_TOKEN: ${{ secrets.CONTRIBUTIONS_TOKEN || github.token }}
       MOONWALK_USERNAME: ${{ inputs.username || vars.GITHUB_USERNAME }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-          cache: pip
-      - name: Install package
-        run: python -m pip install .
-      - name: Generate contribution animation
+      - name: Require a GitHub username
         run: |
           if [ -z "$MOONWALK_USERNAME" ]; then
             echo "Set the GITHUB_USERNAME repository variable or provide the workflow username input." >&2
             exit 1
           fi
-          moonwalk-contributions --username "$MOONWALK_USERNAME" --output-dir assets
+      - name: Generate contribution animation
+        uses: ./
+        with:
+          github_user_name: ${{ env.MOONWALK_USERNAME }}
+          github_token: ${{ secrets.CONTRIBUTIONS_TOKEN || github.token }}
+          output_dir: assets
       - name: Publish changed assets
         run: |
           git config user.name "github-actions[bot]"

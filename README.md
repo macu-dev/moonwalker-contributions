@@ -1,46 +1,96 @@
 # Moonwalk Contributions
 
-Genera una animación de la cuadrícula de contribuciones de GitHub: un personaje pixel art de traje claro, camisa azul y sombrero hace moonwalk durante todo el recorrido, encendiendo un brillo en cada baldosa al pasar.
+Una animación del calendario de contribuciones de GitHub, recorrido por un moonwalker en pixel art. El bailarín avanza por toda la cuadrícula y enciende brevemente cada día que pisa.
 
-> La vista siguiente usa actividad sintética de demostración. Ejecuta el generador con tu usuario para crear imágenes con datos reales.
+![Moonwalk sobre una cuadrícula de contribuciones de GitHub](assets/moonwalk-contributions.gif)
 
-![Demostración de la animación Moonwalk Contributions](assets/moonwalk-contributions.gif)
+[Imagen PNG estática](assets/moonwalk-contributions.png) · [Vista corta del movimiento](assets/moonwalk-continuous-preview.gif)
 
-[Ver imagen estática de respaldo](assets/moonwalk-contributions.png) · [Ver una muestra corta del recorrido](assets/moonwalk-continuous-preview.gif)
+Puedes usarlo como una GitHub Action reutilizable en el README de tu perfil o ejecutar el generador de Python localmente.
 
-## Requisitos
+## Uso como GitHub Action
 
-- Python 3.12 o posterior.
-- Un token de GitHub en `GITHUB_TOKEN` para consultar la API GraphQL. El programa nunca guarda ni muestra el valor del token.
+Añade un workflow al repositorio donde quieras guardar la animación. Este ejemplo actualiza las imágenes todos los días y también permite iniciar la ejecución desde **Actions → Generar moonwalk → Run workflow**:
 
-GitHub requiere autenticación para las solicitudes GraphQL. La colección de contribuciones puede incluir contribuciones privadas si el token tiene el permiso `read:user` y la cuenta permite mostrar esos recuentos. Consulta la [documentación de autenticación GraphQL](https://docs.github.com/en/graphql/guides/forming-calls-with-graphql) y la [referencia de contribuciones](https://docs.github.com/en/graphql/reference/users#contributionscollection).
+```yaml
+name: Generar moonwalk
 
-## Instalación
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 4 * * *"
 
-Desde la raíz de un checkout:
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el repositorio del perfil
+        uses: actions/checkout@v6
+
+      - name: Generar el moonwalk
+        uses: macu-dev/moonwalker-contributions@main
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          # Opcional para contribuciones públicas. Usa un secreto con acceso
+          # read:user si necesitas incluir contribuciones privadas.
+          github_token: ${{ secrets.CONTRIBUTIONS_TOKEN }}
+          output_dir: assets
+
+      - name: Publicar las imágenes modificadas
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- assets/moonwalk-contributions.gif assets/moonwalk-contributions.png
+          if git diff --cached --quiet; then
+            echo "Las imágenes del moonwalk ya están actualizadas."
+            exit 0
+          fi
+          git commit -m "chore: actualizar animación de contribuciones"
+          git push
+```
+
+La Action escribe `moonwalk-contributions.gif` y `moonwalk-contributions.png` en `output_dir`. No crea commits ni publica ramas: el workflow que la invoca decide si confirma los archivos, los carga como artefactos o los usa en pasos posteriores. Configura `contents: write` solo si el workflow necesita confirmar las imágenes.
+
+El ejemplo usa `@main` para que funcione antes de publicar la primera versión etiquetada. Después de publicar una versión, fija la Action a su etiqueta, por ejemplo `@v1`. El repositorio que contiene la Action debe ser público o tener acceso habilitado para el repositorio que la utiliza.
+
+Para mostrar la animación generada en el README de tu perfil, confirma las imágenes en ese repositorio y añade:
+
+```markdown
+![Mi moonwalk de contribuciones de GitHub](assets/moonwalk-contributions.gif)
+
+[Versión estática](assets/moonwalk-contributions.png)
+```
+
+El token predeterminado es `github.token`. Para mostrar contribuciones públicas, deja vacío `github_token`. Para incluir contribuciones privadas, crea un token con acceso `read:user`, guárdalo como secreto de repositorio `CONTRIBUTIONS_TOKEN` y pásalo como en el ejemplo. El token se entrega mediante una variable de entorno y nunca se escribe en los archivos generados.
+
+### Parámetros de la Action
+
+| Parámetro | Obligatorio | Valor predeterminado | Descripción |
+| --- | --- | --- | --- |
+| `github_user_name` | Sí | — | Cuenta de GitHub cuyo calendario de contribuciones se representará. |
+| `github_token` | No | `github.token` del workflow | Token para la consulta GraphQL de GitHub. |
+| `output_dir` | No | `assets` | Directorio relativo dentro del workspace para guardar el GIF y el PNG. |
+
+## Generar imágenes localmente
+
+Requisitos: Python 3.12 o posterior. La API GraphQL de GitHub requiere un token en `GITHUB_TOKEN`.
 
 ```bash
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install .
-```
-
-## Generar tu animación
-
-Configura el token en el entorno y reemplaza `TU_USUARIO` por el nombre de usuario de GitHub:
-
-```bash
 export GITHUB_TOKEN="tu-token"
-moonwalk-contributions --username TU_USUARIO --output-dir assets
+moonwalk-contributions --username TU_USUARIO_DE_GITHUB --output-dir assets
 ```
 
-El comando escribe `moonwalk-contributions.gif` y `moonwalk-contributions.png` en el directorio indicado. El GIF muestra moonwalk inicial, moonwalk continuo con brillo y moonwalk final, y se repite en bucle; el PNG muestra la pose final y sirve como alternativa estática. Si la consulta falla, los archivos que ya existían se conservan.
-
-La cuadrícula representa el último año de contribuciones que devuelve GitHub. Las contribuciones privadas dependen de los permisos del token y la configuración de la cuenta.
+El comando genera el mismo GIF y PNG que la Action. Si falla la consulta del calendario o la generación, conserva las imágenes existentes. El calendario representa el último año de contribuciones que devuelve GitHub. La inclusión de contribuciones privadas depende del acceso `read:user` del token y de la configuración de visibilidad de la cuenta. Consulta la [guía de autenticación GraphQL de GitHub](https://docs.github.com/en/graphql/guides/forming-calls-with-graphql) y la [referencia de contribuciones](https://docs.github.com/en/graphql/reference/users#contributionscollection).
 
 ## Desarrollo
 
-Instala las herramientas de desarrollo y ejecuta los mismos controles que usa CI:
+Instala las herramientas de desarrollo y ejecuta los controles que usa CI:
 
 ```bash
 python -m pip install -e '.[dev]'
@@ -50,20 +100,8 @@ mypy --strict
 pytest
 ```
 
-El código sigue PEP 8, usa type hints y docstrings en las APIs públicas, y mantiene la consulta, el modelo, el render y la CLI en módulos separados.
-
-Consulta [CONTRIBUTING.md](CONTRIBUTING.md) para preparar y proponer cambios.
+Consulta [CONTRIBUTING.md](CONTRIBUTING.md) para ver las convenciones de código y el proceso para colaborar.
 
 ## Licencia
 
-Este proyecto se distribuye bajo la licencia MIT. Consulta el archivo [LICENSE](LICENSE).
-
-## Actualización automática en GitHub Actions
-
-El workflow `Update contributions animation` valida el paquete y actualiza los recursos diariamente. También puedes iniciarlo desde **Actions → Update contributions animation → Run workflow**.
-
-Configura la variable de repositorio `GITHUB_USERNAME` con la cuenta que alimentará la animación. Al ejecutarlo manualmente, puedes indicar otro usuario en el campo `username`.
-
-GraphQL requiere autenticación. El workflow usa el secreto `CONTRIBUTIONS_TOKEN` si está configurado; para contribuciones públicas también puede usar el `GITHUB_TOKEN` automático. Para incluir contribuciones privadas, crea un token con permiso `read:user` y guárdalo como `CONTRIBUTIONS_TOKEN` en **Settings → Secrets and variables → Actions**. No pegues el token en variables, archivos ni comandos registrados.
-
-El workflow solo agrega los dos archivos generados en `assets/` y crea un commit cuando cambian. Si la consulta o la generación falla, termina con error y conserva los recursos publicados anteriormente.
+Este proyecto se distribuye bajo la licencia MIT. Consulta [LICENSE](LICENSE).
