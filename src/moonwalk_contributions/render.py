@@ -18,6 +18,7 @@ GRID_TOP = 88
 GRID_BOTTOM = 20
 WEEKDAY_LABELS = {1: "lun", 3: "mié", 5: "vie"}
 MONTH_LABELS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
+Font = ImageFont.ImageFont | ImageFont.FreeTypeFont
 
 COLORS = {
     "background": "#100d20",
@@ -153,7 +154,7 @@ def _draw_calendar_labels(
     calendar: ContributionCalendar,
     layout: GridLayout,
     width: int,
-    font: ImageFont.ImageFont,
+    font: Font,
 ) -> None:
     """Add GitHub-like weekday and month labels around the contribution grid."""
     for weekday, label in WEEKDAY_LABELS.items():
@@ -187,7 +188,7 @@ def _draw_activity_legend(
     draw: ImageDraw.ImageDraw,
     width: int,
     height: int,
-    font: ImageFont.ImageFont,
+    font: Font,
 ) -> None:
     """Show the five activity levels as a compact scale below the calendar."""
     low_label, high_label = "Menos", "Más"

@@ -119,7 +119,7 @@ def build_animation(calendar: ContributionCalendar) -> AnimationSequence:
         distance=ENDING_GLIDE_DISTANCE,
         frame_count=ENDING_FRAME_COUNT,
     )
-    final_pose_position = (final_position[0] - ENDING_GLIDE_DISTANCE, final_position[1])
+    final_pose_position = frames[-1].performer_position
     frames.append(_render_frame(calendar, final_pose_position, FramePhase.FINAL_POSE, None, 0, "final"))
     durations.append(FINAL_POSE_DURATION_MS)
 
