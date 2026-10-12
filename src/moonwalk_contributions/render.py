@@ -11,10 +11,10 @@ from PIL import Image, ImageColor, ImageDraw, ImageFont
 from moonwalk_contributions.models import ContributionCalendar, ContributionDay
 
 CANVAS_WIDTH = 960
-CANVAS_HEIGHT = 224
+CANVAS_HEIGHT = 248
 CELL_SIZE = 10
 CELL_GAP = 4
-GRID_TOP = 88
+GRID_TOP = 104
 GRID_BOTTOM = 20
 WEEKDAY_LABELS = {1: "lun", 3: "mié", 5: "vie"}
 MONTH_LABELS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
@@ -101,7 +101,7 @@ def render_contribution_grid(
     )
     _draw_stars(draw, width, height)
 
-    font = ImageFont.load_default()
+    font = ImageFont.load_default(size=12)
     draw.text(
         (layout.origin_x, 12),
         f"{calendar.total_contributions:,}".replace(",", ".") + " contribuciones en el último año",

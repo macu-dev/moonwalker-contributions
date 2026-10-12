@@ -148,7 +148,7 @@ def test_render_uses_distinct_base_colors_for_activity_levels() -> None:
     low_x, low_y = layout.cell_center(0, 1)
     high_x, high_y = layout.cell_center(0, 2)
 
-    assert image.size == (960, 224)
+    assert image.size == (960, 248)
     assert image.getpixel((empty_x, empty_y)) == ImageColor.getrgb(COLORS["grid_base"])
     assert image.getpixel((low_x, low_y)) == ImageColor.getrgb(COLORS["FIRST_QUARTILE"])
     assert image.getpixel((high_x, high_y)) == ImageColor.getrgb(COLORS["FOURTH_QUARTILE"])
