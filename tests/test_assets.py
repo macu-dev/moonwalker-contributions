@@ -14,6 +14,8 @@ from moonwalk_contributions.animation import (
     ENDING_FRAME_COUNT,
     ENDPOINT_FRAME_COUNT,
     SAMPLES_PER_CELL,
+    SPIN_FRAME_COUNT,
+    SPIN_INTERVAL_CELLS,
     AnimationSequence,
     build_animation,
 )
@@ -75,7 +77,21 @@ def test_full_year_animation_stays_within_readme_size_budget(tmp_path: Path) -> 
     generated = save_animation(sequence, tmp_path)
 
     with Image.open(generated.animation) as gif:
-        assert gif.n_frames == (SAMPLES_PER_CELL * (53 * 7 - 1) + 1 + ENDPOINT_FRAME_COUNT + ENDING_FRAME_COUNT + 1)
+        spin_count = (53 * 7 - 1) // SPIN_INTERVAL_CELLS
+        # The encoder combines the identical moonwalk/first-spin images.
+        assert gif.n_frames == (
+            SAMPLES_PER_CELL * (53 * 7 - 1)
+            + 1
+            + ENDPOINT_FRAME_COUNT
+            + ENDING_FRAME_COUNT
+            + 1
+            + spin_count * (SPIN_FRAME_COUNT - 1)
+        )
+        playback_ms = 0
+        for index in range(gif.n_frames):
+            gif.seek(index)
+            playback_ms += gif.info["duration"]
+        assert playback_ms == sum(sequence.durations_ms)
     assert generated.animation.stat().st_size <= assets.MAX_GIF_SIZE_BYTES
 
 

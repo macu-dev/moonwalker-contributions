@@ -20,6 +20,8 @@ from moonwalk_contributions.render import (
 
 MOONWALK_FRAME_DURATION_MS = 50
 SAMPLES_PER_CELL = 4
+SPIN_INTERVAL_CELLS = 24
+SPIN_FRAME_COUNT = 16
 FINAL_POSE_DURATION_MS = 1_000
 ENDPOINT_FRAME_COUNT = MOONWALK_CYCLE_FRAMES + 1
 ENDING_GLIDE_DISTANCE = MOONWALK_SAMPLE_DISTANCE * 2
@@ -31,6 +33,7 @@ class FramePhase(StrEnum):
 
     MOONWALK_START = "moonwalk_start"
     MOONWALK = "moonwalk"
+    SPIN = "spin"
     MOONWALK_END = "moonwalk_end"
     FINAL_POSE = "final_pose"
 
@@ -108,6 +111,21 @@ def build_animation(calendar: ContributionCalendar) -> AnimationSequence:
                 )
             )
             durations.append(MOONWALK_FRAME_DURATION_MS)
+            if sample == 0 and (cell_index + 1) % SPIN_INTERVAL_CELLS == 0 and cell_index + 1 < len(traversal):
+                for spin_sample in range(SPIN_FRAME_COUNT):
+                    frames.append(
+                        _render_frame(
+                            calendar,
+                            position,
+                            FramePhase.SPIN,
+                            contribution.day if contribution else None,
+                            gait_step,
+                            "spin",
+                            facing,
+                            spin_progress=spin_sample / (SPIN_FRAME_COUNT - 1),
+                        )
+                    )
+                    durations.append(MOONWALK_FRAME_DURATION_MS)
 
     final_position = layout.cell_center(*traversal[-1])
     _append_endpoint_moonwalk(
@@ -163,6 +181,8 @@ def _render_frame(
     step_index: float,
     pose: str,
     facing: int = 1,
+    *,
+    spin_progress: float = 0,
 ) -> AnimationFrame:
     image = render_contribution_grid(
         calendar,
@@ -171,6 +191,7 @@ def _render_frame(
         dancer_pose=pose,
         step_index=step_index,
         facing=facing,
+        spin_progress=spin_progress,
         width=CANVAS_WIDTH,
         height=CANVAS_HEIGHT,
     )

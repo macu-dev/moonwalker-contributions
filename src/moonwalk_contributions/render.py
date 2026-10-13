@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from math import pi, sin
+from math import cos, pi, sin
 from pathlib import Path
 
 from PIL import Image, ImageColor, ImageDraw, ImageFont
@@ -88,6 +88,7 @@ def render_contribution_grid(
     dancer_pose: str = "moonwalk",
     step_index: float = 0,
     facing: int = 1,
+    spin_progress: float = 0,
     width: int = CANVAS_WIDTH,
     height: int = CANVAS_HEIGHT,
 ) -> Image.Image:
@@ -152,7 +153,7 @@ def render_contribution_grid(
 
     if calendar.days:
         center_x, center_y = performer_at or _performer_anchor(calendar, layout)
-        _draw_readme_sized_performer(image, center_x, center_y - 37, dancer_pose, step_index, facing)
+        _draw_readme_sized_performer(image, center_x, center_y - 37, dancer_pose, step_index, facing, spin_progress)
     _draw_activity_legend(draw, width, height, font)
     return image
 
@@ -228,10 +229,13 @@ def _draw_readme_sized_performer(
     pose: str,
     step_index: float,
     facing: int,
+    spin_progress: float = 0,
 ) -> None:
     """Composite a crisp pixel-art performer without smoothing its edges."""
     sprite = Image.new("RGBA", (120, 120), (0, 0, 0, 0))
-    draw_moonwalker(ImageDraw.Draw(sprite), 60, 60, pose=pose, step_index=step_index, facing=facing)
+    draw_moonwalker(
+        ImageDraw.Draw(sprite), 60, 60, pose=pose, step_index=step_index, facing=facing, spin_progress=spin_progress
+    )
     image.paste(sprite, (center_x - 60, center_y - 60), sprite)
 
 
@@ -286,8 +290,12 @@ def draw_moonwalker(
     pose: str = "moonwalk",
     step_index: float = 0,
     facing: int = 1,
+    spin_progress: float = 0,
 ) -> None:
     """Draw the reference outfit in pixel art, facing opposite its travel."""
+    if pose == "spin":
+        _draw_spin(draw, center_x, center_y, step_index, facing, spin_progress)
+        return
     if pose in ("moonwalk", "walk"):
         _draw_moonwalk_profile(draw, center_x, center_y, step_index, facing, walking=pose == "walk")
         return
@@ -402,6 +410,115 @@ def draw_moonwalker(
     line(((-7, -42), (-4, -39), (1, -39), (5, -42)), light, 2)
     line(((-7, -36), (6, -36)), blue, 2)
     line(((-11, -33), (10, -33)), light, 1)
+
+
+def _draw_spin(
+    draw: ImageDraw.ImageDraw,
+    center_x: int,
+    center_y: int,
+    step_index: float,
+    facing: int,
+    progress: float,
+) -> None:
+    """Turn upright through front and back views, closing on the original gait."""
+    if progress <= 0 or progress >= 1:
+        _draw_moonwalk_profile(draw, center_x, center_y, step_index, facing)
+        return
+
+    angle = 2 * pi * progress
+    side, front = cos(angle), sin(angle)
+    gather = sin(pi * progress)
+    suit, light, shade = "#d9d7ba", "#f4efd6", "#939583"
+    outline, blue, shoes = "#555d61", "#596d91", "#242b39"
+
+    def point(x: float, y: float, depth: float = 0) -> tuple[int, int]:
+        return center_x + facing * round(x * side + depth * front), center_y + round(y)
+
+    def polygon(points: tuple[tuple[float, float, float], ...], color: str) -> None:
+        draw.polygon([point(*vertex) for vertex in points], fill=color)
+
+    def line(points: tuple[tuple[float, float, float], ...], color: str, width: int = 2) -> None:
+        draw.line([point(*vertex) for vertex in points], fill=color, width=width)
+
+    draw.ellipse((center_x - 26, center_y + 37, center_x + 23, center_y + 40), fill=COLORS["performer_shadow"])
+    # Gather the feet over the pivot, then restore the exact backslide stance.
+    feet = moonwalk_feet(step_index)
+    order = (0, 1) if front >= 0 else (1, 0)
+    for index in order:
+        foot = feet[index]
+        depth = -4 if index == 0 else 4
+        toe_x = foot.x * (1 - gather)
+        heel_lift = foot.heel_lift * (1 - gather) + 5 * gather
+        heel_x = toe_x - 12 + heel_lift * 0.55
+        ankle_x, ankle_y = heel_x + 2, 34 - heel_lift
+        knee_x = ankle_x / 2 + heel_lift / 9 * 7
+        leg = ((0, 3, depth), (knee_x, 18 - heel_lift / 9 * 4, depth), (ankle_x, ankle_y, depth))
+        line(leg, outline, 9)
+        line(leg, shade if index == 0 else suit, 7)
+        line(((ankle_x - 2, ankle_y, depth), (ankle_x + 2, ankle_y, depth)), light, 3)
+        polygon(
+            (
+                (heel_x, 36 - heel_lift, depth),
+                (heel_x, 32 - heel_lift, depth),
+                (toe_x, 34, depth),
+                (toe_x + 2, 37, depth),
+                (toe_x - 1, 37, depth),
+            ),
+            shoes,
+        )
+
+    # The torso broadens at front/back; lateral features cross to the other side.
+    breadth = 9 + 7 * abs(front)
+    body_x = center_x + facing * round(2 * side)
+    draw.polygon(
+        [
+            (body_x - round(breadth), center_y - 23),
+            (body_x - 6, center_y - 27),
+            (body_x + 6, center_y - 27),
+            (body_x + round(breadth), center_y - 23),
+            (body_x + round(breadth - 2), center_y + 4),
+            (body_x, center_y + 7),
+            (body_x - round(breadth - 2), center_y + 4),
+        ],
+        fill=outline,
+    )
+    draw.rectangle((body_x - round(breadth - 2), center_y - 22, body_x + round(breadth - 2), center_y + 3), fill=suit)
+    if front >= 0:
+        shirt_x = body_x + facing * round(5 * side)
+        shirt_width = 2 + round(3 * front)
+        draw.rectangle((shirt_x - shirt_width, center_y - 24, shirt_x + shirt_width, center_y), fill=blue)
+        draw.line((shirt_x - shirt_width - 2, center_y - 23, shirt_x - shirt_width, center_y - 8), fill=light, width=2)
+    else:
+        draw.line((body_x, center_y - 22, body_x, center_y + 3), fill=shade, width=1)
+        draw.line((body_x - 9, center_y - 20, body_x + 9, center_y - 20), fill=light, width=2)
+    for depth in (-8, 8):
+        arm = ((-3, -22, depth), (-8 + 6 * gather, -13, depth * 1.5), (-3 + 8 * gather, -5, depth))
+        line(arm, outline, 8)
+        line(arm, suit, 5)
+        line((arm[-1], (arm[-1][0] + 2, -4, depth)), light, 3)
+
+    head_x = body_x + facing * round(4 * side)
+    draw.rectangle((head_x - 5, center_y - 34, head_x + 5, center_y - 27), fill=shade)
+    if front >= 0:
+        draw.rectangle((head_x - 3, center_y - 33, head_x + 3, center_y - 28), fill=light)
+    brim = 12 + round(4 * abs(front))
+    draw.polygon(
+        [
+            (body_x - 7, center_y - 43),
+            (body_x - 3, center_y - 45),
+            (body_x + 2, center_y - 42),
+            (body_x + 6, center_y - 43),
+            (body_x + 9, center_y - 39),
+            (body_x + 9, center_y - 35),
+            (body_x - 9, center_y - 35),
+        ],
+        fill=outline,
+    )
+    draw.rectangle((body_x - 6, center_y - 41, body_x + 6, center_y - 36), fill=suit)
+    draw.line((body_x - 5, center_y - 40, body_x + 5, center_y - 40), fill=light, width=2)
+    draw.line((body_x - 7, center_y - 36, body_x + 7, center_y - 36), fill=blue, width=2)
+    draw.rectangle((body_x - brim, center_y - 35, body_x + brim, center_y - 32), fill=suit)
+    draw.line((body_x - brim, center_y - 32, body_x + brim, center_y - 32), fill=light)
 
 
 def _draw_moonwalk_profile(

@@ -1,6 +1,8 @@
 """Tests for the moonwalk and closing choreography sequence."""
 
 import json
+from datetime import date, timedelta
+from itertools import groupby
 from pathlib import Path
 from unittest.mock import patch
 
@@ -13,11 +15,13 @@ from moonwalk_contributions.animation import (
     FINAL_POSE_DURATION_MS,
     MOONWALK_FRAME_DURATION_MS,
     SAMPLES_PER_CELL,
+    SPIN_FRAME_COUNT,
+    SPIN_INTERVAL_CELLS,
     FramePhase,
     build_animation,
 )
 from moonwalk_contributions.github import parse_contribution_calendar
-from moonwalk_contributions.models import ContributionCalendar
+from moonwalk_contributions.models import ContributionCalendar, ContributionDay
 from moonwalk_contributions.render import (
     COLORS,
     MOONWALK_CYCLE_FRAMES,
@@ -30,6 +34,76 @@ from moonwalk_contributions.render import (
 )
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "contributions.json"
+
+
+@pytest.mark.parametrize("columns", [3, 4, 24, 48])
+def test_spins_preserve_route_timing_and_highlights(columns: int) -> None:
+    """Spins pause every 24 cells, including row edges, and never at the end."""
+    start = date(2026, 1, 4)
+    calendar = ContributionCalendar(
+        0,
+        tuple(
+            tuple(ContributionDay(start + timedelta(days=week * 7 + day), 0, "NONE") for day in range(7))
+            for week in range(columns)
+        ),
+    )
+    animation = build_animation(calendar)
+    groups = [
+        list(group)
+        for phase, group in groupby(animation.frames, key=lambda frame: frame.phase)
+        if phase is FramePhase.SPIN
+    ]
+    assert len(groups) == (7 * columns - 1) // SPIN_INTERVAL_CELLS
+    layout = grid_layout(calendar)
+    route = [
+        (week, row) for row in range(7) for week in (range(columns) if row % 2 == 0 else range(columns - 1, -1, -1))
+    ]
+    for number, group in enumerate(groups, 1):
+        cell = number * SPIN_INTERVAL_CELLS - 1
+        assert len(group) == SPIN_FRAME_COUNT
+        assert {frame.performer_position for frame in group} == {layout.cell_center(*route[cell])}
+        assert len({frame.active_day for frame in group}) == 1
+    for index, frame in enumerate(animation.frames):
+        if frame.phase is FramePhase.SPIN:
+            assert animation.durations_ms[index] == 50
+            previous = animation.frames[index - 1]
+            assert frame.performer_position == previous.performer_position
+            assert frame.active_day == previous.active_day
+        if index and FramePhase.SPIN in (frame.phase, animation.frames[index - 1].phase):
+            before = animation.frames[index - 1].performer_position
+            assert max(abs(frame.performer_position[axis] - before[axis]) for axis in (0, 1)) <= 4
+    walking = [frame for frame in animation.frames if frame.phase is FramePhase.MOONWALK]
+    assert len(walking) == (7 * columns - 1) * SAMPLES_PER_CELL + 1
+    assert {frame.active_day for frame in walking} == {day.day for day in calendar.days}
+    assert animation.frames[-2].phase is FramePhase.MOONWALK_END
+    assert animation.frames[-1].phase is FramePhase.FINAL_POSE
+    # Rendering twice must produce the same phase schedule and images.
+    repeated = build_animation(calendar)
+    assert [frame.image.tobytes() for frame in animation.frames] == [frame.image.tobytes() for frame in repeated.frames]
+
+
+@pytest.mark.parametrize("facing", [-1, 1])
+def test_spin_closes_on_original_gait_and_shows_front_and_back(facing: int) -> None:
+    """A full upright turn has distinct views and restores its starting stance."""
+
+    def sprite(pose: str, progress: float = 0) -> Image.Image:
+        image = Image.new("RGB", (120, 120), COLORS["background"])
+        draw_moonwalker(ImageDraw.Draw(image), 60, 60, pose=pose, step_index=12, facing=facing, spin_progress=progress)
+        return image
+
+    original = sprite("moonwalk")
+    assert sprite("spin", 0).tobytes() == original.tobytes()
+    assert sprite("spin", 1).tobytes() == original.tobytes()
+    views = [sprite("spin", progress) for progress in (0.25, 0.5, 0.75)]
+    assert len({image.tobytes() for image in views}) == 3
+    for image in views:
+        colors = {color for _, color in image.getcolors() or []}
+        assert {(217, 215, 186), (89, 109, 145), (36, 43, 57)} <= colors
+    # Blue shirt visible on the front, absent from the back torso.
+    front, _, back = views
+    shirt = (89, 109, 145)
+    assert shirt in {color for _, color in front.crop((40, 36, 80, 63)).getcolors() or []}
+    assert shirt not in {color for _, color in back.crop((40, 36, 80, 63)).getcolors() or []}
 
 
 def test_moonwalk_continues_across_the_entire_grid() -> None:
@@ -55,7 +129,7 @@ def test_moonwalk_highlights_every_day_and_connects_to_endpoint_dances() -> None
     walked_days = {frame.active_day for frame in animation.frames if frame.phase is FramePhase.MOONWALK}
     assert walked_days - {None} == {day.day for day in calendar.days}
     for first, second in zip(animation.frames, animation.frames[1:], strict=False):
-        if first.phase is not second.phase:
+        if first.phase is not second.phase and FramePhase.SPIN not in (first.phase, second.phase):
             assert first.performer_position == second.performer_position
     walk = [frame for frame in animation.frames if frame.phase is FramePhase.MOONWALK]
     layout = grid_layout(calendar)
@@ -119,7 +193,7 @@ def test_every_moving_phase_uses_moonwalk_facing_backward() -> None:
         animation = build_animation(calendar)
     directions = set()
     for index, (current, following) in enumerate(zip(animation.frames, animation.frames[1:], strict=False)):
-        if current.phase is FramePhase.FINAL_POSE:
+        if current.phase in (FramePhase.FINAL_POSE, FramePhase.SPIN):
             continue
         call = render.call_args_list[index]
         assert call.kwargs["dancer_pose"] == "moonwalk"

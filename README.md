@@ -1,10 +1,10 @@
 # Moonwalk Contributions
 
-Una animación del calendario de contribuciones de GitHub, recorrido por un moonwalker en pixel art. El gráfico incluye los días y meses, el total anual y una escala de intensidad; el bailarín recorre cada casilla y enciende brevemente cada día que pisa.
+Una animación del calendario de contribuciones de GitHub, recorrido por un moonwalker en pixel art. El gráfico incluye los días y meses, el total anual y una escala de intensidad; el bailarín recorre cada casilla y enciende brevemente cada día que pisa. Cada 24 casillas hace un giro completo de 0,8 segundos inspirado en Michael Jackson y retoma el moonwalk.
 
 ![Moonwalk sobre una cuadrícula de contribuciones de GitHub](assets/moonwalk-contributions.gif)
 
-[Imagen PNG estática](assets/moonwalk-contributions.png) · [Vista corta del movimiento](assets/moonwalk-continuous-preview.gif)
+[Imagen PNG estática](assets/moonwalk-contributions.png) · [Vista corta del movimiento](assets/moonwalk-continuous-preview.gif) · [Vista del giro](assets/moonwalk-spin-preview.gif)
 
 Puedes usarlo como una GitHub Action reutilizable en el README de tu perfil o ejecutar el generador de Python localmente.
 
