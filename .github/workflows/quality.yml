@@ -1,0 +1,51 @@
+name: Quality
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        default: ''
+      release_tag:
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Quality checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Install Python tools
+        run: python -m pip install -e '.[dev]'
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy --strict
+      - run: pytest
+      - name: Verify package and CLI version
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: node scripts/check-version.cjs
+      - name: Install release validation tools outside the project
+        run: npm install --prefix "$RUNNER_TEMP/release-validation" --no-audit --no-fund release-please@17.11.2 ajv@8.17.1 ajv-formats@3.0.1 yaml@2.8.1
+      - name: Test release behavior and configuration
+        env:
+          NODE_PATH: ${{ runner.temp }}/release-validation/node_modules
+        run: node --test tests/release.test.cjs

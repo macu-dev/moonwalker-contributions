@@ -54,7 +54,9 @@ jobs:
 
 La Action escribe `moonwalk-contributions.gif` y `moonwalk-contributions.png` en `output_dir`. No crea commits ni publica ramas: el workflow que la invoca decide si confirma los archivos, los carga como artefactos o los usa en pasos posteriores. Configura `contents: write` solo si el workflow necesita confirmar las imágenes.
 
-El ejemplo usa `@main` para que funcione antes de publicar la primera versión etiquetada. Después de publicar una versión, fija la Action a su etiqueta, por ejemplo `@v1`. El repositorio que contiene la Action debe ser público o tener acceso habilitado para el repositorio que la utiliza.
+El ejemplo usa `@main` para que funcione antes de publicar la primera versión etiquetada. Después de publicar una versión, fija la Action a su tag completo publicado (`@vX.Y.Z`, sustituyendo X, Y y Z por la versión real) o a su SHA. Durante `0.x` no se ofrece un alias `v0`; desde la primera versión estable se mantendrá el alias mayor correspondiente, como `v1`. El repositorio que contiene la Action debe ser público o tener acceso habilitado para el repositorio que la utiliza.
+
+Las versiones se preparan con Release Please mediante una PR revisable. Consulta el [changelog](CHANGELOG.md) y la [política de releases](RELEASING.md) para las reglas de compatibilidad, notas de versión y recuperación.
 
 Para mostrar la animación generada en el README de tu perfil, confirma las imágenes en ese repositorio y añade:
 

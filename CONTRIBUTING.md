@@ -43,3 +43,16 @@ La integración continua ejecuta los mismos controles. Corrige los errores de fo
 5. No incluyas recursos generados ni cambios de licencia sin explicar su propósito.
 
 Usa las plantillas de issue y pull request disponibles en `.github/`.
+
+## Títulos y releases
+
+Usa Conventional Commits en el título: `feat: añadir una opción`,
+`fix(cli): corregir etiquetas`, `chore: actualizar herramientas` o
+`feat!: cambiar una entrada incompatible`. La fusión por squash conserva ese
+título. CI valida el título también cuando se edita.
+
+Describe el cambio observable, su impacto y los pasos de migración o indica
+que no aplica. Release Please reúne los cambios publicables en una PR de release;
+el mantenedor revisa sus notas antes de fusionarla. Los commits diarios de imágenes
+no inician releases. Consulta [RELEASING.md](RELEASING.md) para la política de
+versiones, configuración y pruebas de la automatización.
