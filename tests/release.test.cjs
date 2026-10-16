@@ -124,11 +124,15 @@ test('titles accept conventional types, scopes, breaking markers and release PRs
   for (const title of ['Update stuff', 'feat: ', 'feat: cambio\nrun me', 'feat:']) assert.ok(!release.validTitle(title));
 });
 
-test('activation requires app configuration and recorded preflight; preparation can precede publication', () => {
+test('activation needs credentials and publication switch; no administrative URL is required', () => {
   assert.throws(() => release.requireActivation({}));
-  const env = { RELEASE_APP_ID: '1', RELEASE_APP_PRIVATE_KEY: 'test', RELEASE_PREFLIGHT_URL: 'https://github.com/org/repo/issues/1' };
+  assert.throws(() => release.requireActivation({}, false));
+  const env = { RELEASE_APP_ID: '1', RELEASE_APP_PRIVATE_KEY: 'test' };
   assert.doesNotThrow(() => release.requireActivation(env, false));
-  assert.throws(() => release.requireActivation(env));
+  assert.doesNotThrow(() => release.requireActivation({ ...env, RELEASE_AUTOMATION_ENABLED: 'false' }, false));
+  for (const value of [undefined, 'false', 'TRUE', '']) {
+    assert.throws(() => release.requireActivation({ ...env, RELEASE_AUTOMATION_ENABLED: value }), /RELEASE_AUTOMATION_ENABLED=true/);
+  }
   assert.doesNotThrow(() => release.requireActivation({ ...env, RELEASE_AUTOMATION_ENABLED: 'true' }));
 });
 

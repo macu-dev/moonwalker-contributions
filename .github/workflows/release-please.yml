@@ -34,12 +34,11 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - name: Require application configuration and preflight evidence
+      - name: Require application credentials
         uses: actions/github-script@v8
         env:
           RELEASE_APP_ID: ${{ vars.RELEASE_APP_ID }}
           RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-          RELEASE_PREFLIGHT_URL: ${{ vars.RELEASE_PREFLIGHT_URL }}
         with:
           script: require('./scripts/release.cjs').requireActivation(process.env, false);
       - name: Create temporary installation token
@@ -122,7 +121,6 @@ jobs:
         env:
           RELEASE_APP_ID: ${{ vars.RELEASE_APP_ID }}
           RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-          RELEASE_PREFLIGHT_URL: ${{ vars.RELEASE_PREFLIGHT_URL }}
           RELEASE_AUTOMATION_ENABLED: ${{ vars.RELEASE_AUTOMATION_ENABLED }}
         with:
           script: require('./scripts/release.cjs').requireActivation(process.env);

@@ -80,37 +80,39 @@ habilitarse antes de permitir publicaciones públicas.
    esté actualizada y que las notas y migraciones estén revisadas antes de fusionar.
    El bot no aprueba ni fusiona su propia PR. La generación diaria conserva sus
    permisos existentes; comprobar su convivencia con las reglas disponibles.
-4. Con una sesión administrativa autenticada, verificar configuración de Actions,
-   acceso de la App, protecciones, tags, releases y borradores. Registrar fecha,
-   nombres de controles, resultados y enlaces en un issue o PR de este repositorio.
-   Si el plan no permite proteger `main`, registrar explícitamente:
-   «Protección de main no disponible por el plan; revisión manual antes del merge».
-   Esta modalidad acordada permite continuar; no equivale a una protección activa.
-   Un `401`, `403` o `404` inesperado bloquea esta comprobación: no prueba ausencia.
-5. Configurar `RELEASE_PREFLIGHT_URL` con el enlace HTTPS a esa evidencia,
-   como variable del repositorio o del environment `prod`.
-   Mantener `RELEASE_AUTOMATION_ENABLED` sin definir o en `false`.
+4. Mantener `RELEASE_AUTOMATION_ENABLED` sin definir o en `false`.
    Ejecutar **Release Please** manualmente: puede preparar la PR, pero no publicar.
-6. Comprobar que la App abre/actualiza la PR y que CI arranca automáticamente sobre
-   su revisión vigente. Completar la evidencia con enlaces a esas ejecuciones.
-   No usar credenciales personales como sustituto silencioso de la App.
-7. Recién entonces configurar `RELEASE_AUTOMATION_ENABLED=true`. Al fusionar la PR
-   de release, el flujo valida y publica. No fusionarla antes de completar la
-   revisión del historial, de la versión y de las notas.
+5. En la primera PR del bot, comprobar que CI arranca automáticamente y aprueba
+   sobre su revisión vigente. Revisar historial, versión propuesta, notas y
+   migraciones, comparando con las versiones que ya existan en GitHub.
+6. Configurar `RELEASE_AUTOMATION_ENABLED=true`, como variable del repositorio o
+   de `prod`, cuando se decida habilitar la publicación. Es un interruptor de
+   configuración inicial: no requiere cambios en cada release. Fusionar la PR
+   revisada; el workflow valida el commit objetivo antes de publicarlo.
 
-La evidencia de configuración administrativa se revisa con acceso del mantenedor;
-la App no necesita permisos administrativos adicionales. El workflow exige el
-enlace y la activación, comprueba lectura autenticada de tags/releases y squash
-merge, y falla antes de mutaciones si la autenticación no funciona. El enlace es
-una constancia administrativa, no una inspección automática de todas las reglas.
+La PR de release y sus ejecuciones de CI son el registro de revisión. No se exige
+un issue adicional ni una URL de verificación; la antigua variable
+`RELEASE_PREFLIGHT_URL` ya no se utiliza y puede eliminarse si fue configurada.
+El workflow comprueba lectura autenticada de tags/releases y squash merge, y falla
+antes de mutaciones si la autenticación no funciona. La App no necesita permisos
+administrativos adicionales.
 
 Sin protección de rama, GitHub permite fusionar con controles fallidos o hacer
 push directo. El mantenedor debe respetar la revisión manual. El workflow conserva
 la validación obligatoria del SHA objetivo antes de publicar: una validación
 fallida deja el borrador sin publicar y no actualiza tags ni alias. Esa garantía
 corresponde al flujo automatizado y no impide cambios directos hechos por cuentas
-con permisos de escritura. La falta de protección por el plan no exige eliminar
-`RELEASE_PREFLIGHT_URL` ni activar anticipadamente la publicación.
+con permisos de escritura. La falta de protección por el plan no impide utilizar
+este flujo ni exige un registro administrativo adicional.
+
+## Publicar una versión
+
+1. Abrir la PR de release que mantiene el bot.
+2. Revisar versión, changelog y migraciones, y comprobar que CI aprueba la última revisión.
+3. Fusionar la PR. La automatización valida y publica el commit objetivo.
+
+La release, sus notas y las ejecuciones del workflow conservan el resultado;
+no hay que completar un issue por cada publicación.
 
 ### Estado inicial y bootstrap
 

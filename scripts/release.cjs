@@ -22,8 +22,8 @@ function requireActivation(env, publishing = true) {
   if (!env.RELEASE_APP_ID || !env.RELEASE_APP_PRIVATE_KEY) {
     throw new Error('Configurar RELEASE_APP_ID y RELEASE_APP_PRIVATE_KEY antes de usar releases.');
   }
-  if ((publishing && env.RELEASE_AUTOMATION_ENABLED !== 'true') || !env.RELEASE_PREFLIGHT_URL?.startsWith('https://github.com/')) {
-    throw new Error('Completar la verificación remota de RELEASING.md y configurar RELEASE_PREFLIGHT_URL y RELEASE_AUTOMATION_ENABLED.');
+  if (publishing && env.RELEASE_AUTOMATION_ENABLED !== 'true') {
+    throw new Error('La publicación está deshabilitada. Configurar RELEASE_AUTOMATION_ENABLED=true cuando se decida publicar.');
   }
 }
 
