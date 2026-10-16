@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "moonwalk-contributions"
-version = "0.1.0"
+version = "0.2.0"
 description = "Generate a moonwalk animation from a GitHub contribution calendar."
 requires-python = ">=3.12"
 dependencies = ["Pillow>=12.0"]
