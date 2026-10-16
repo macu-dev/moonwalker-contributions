@@ -25,6 +25,7 @@ jobs:
   prepare:
     needs: quality
     runs-on: ubuntu-latest
+    environment: prod
     outputs:
       candidate: ${{ steps.candidate.outputs.result }}
       sha: ${{ steps.candidate.outputs.sha }}
@@ -110,6 +111,7 @@ jobs:
   publish:
     needs: [prepare, validate-target]
     runs-on: ubuntu-latest
+    environment: prod
     steps:
       # The publisher always comes from the workflow revision, never from an old recovery tag.
       - uses: actions/checkout@v6

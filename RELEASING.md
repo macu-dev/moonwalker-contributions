@@ -65,9 +65,11 @@ habilitarse antes de permitir publicaciones públicas.
 1. Crear una GitHub App dedicada e instalarla solo en este repositorio. Otorgar
    **Contents**, **Pull requests** e **Issues** con escritura; Metadata se concede
    automáticamente. No conceder bypass de protecciones ni acceso a otros repositorios.
-2. Configurar la variable de repositorio `RELEASE_APP_ID` y el secreto
-   `RELEASE_APP_PRIVATE_KEY`. La clave se carga directamente en GitHub; nunca se
-   incorpora al repositorio, argumentos o logs.
+2. En **Settings → Environments → prod**, configurar la variable
+   `RELEASE_APP_ID` y el secreto `RELEASE_APP_PRIVATE_KEY`. Los jobs `prepare` y
+   `publish` declaran `environment: prod` para acceder a ellos y respetar sus
+   protecciones; los jobs de calidad no necesitan ese environment. La clave se
+   carga directamente en GitHub; nunca se incorpora al repositorio, argumentos o logs.
 3. Habilitar squash merge y usar el título de la PR como título del commit.
    Configurar en `main` revisión de PR y controles requeridos **Quality checks**
    (workflow Quality) y **Conventional title** (workflow PR title), seleccionando
@@ -79,7 +81,8 @@ habilitarse antes de permitir publicaciones públicas.
    acceso de la App, protecciones, tags, releases y borradores. Registrar fecha,
    nombres de controles, resultados y enlaces en un issue o PR de este repositorio.
    Un `401`, `403` o `404` inesperado bloquea esta comprobación: no prueba ausencia.
-5. Configurar `RELEASE_PREFLIGHT_URL` con el enlace HTTPS a esa evidencia.
+5. Configurar `RELEASE_PREFLIGHT_URL` con el enlace HTTPS a esa evidencia,
+   como variable del repositorio o del environment `prod`.
    Mantener `RELEASE_AUTOMATION_ENABLED` sin definir o en `false`.
    Ejecutar **Release Please** manualmente: puede preparar la PR, pero no publicar.
 6. Comprobar que la App abre/actualiza la PR y que CI arranca automáticamente sobre
