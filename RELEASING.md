@@ -71,15 +71,21 @@ habilitarse antes de permitir publicaciones públicas.
    protecciones; los jobs de calidad no necesitan ese environment. La clave se
    carga directamente en GitHub; nunca se incorpora al repositorio, argumentos o logs.
 3. Habilitar squash merge y usar el título de la PR como título del commit.
-   Configurar en `main` revisión de PR y controles requeridos **Quality checks**
-   (workflow Quality) y **Conventional title** (workflow PR title), seleccionando
-   sus nombres efectivos después de la primera ejecución. Exigir la revisión
-   vigente y rama actualizada, sin excepciones para la App. El bot no aprueba ni
-   fusiona su propia PR. La generación diaria conserva sus permisos existentes;
-   comprobar su convivencia con las reglas de rama antes de cambiarlas.
+   Cuando el plan lo permita, proteger `main` con revisión de PR y controles
+   requeridos **Quality checks** (workflow Quality) y **Conventional title**
+   (workflow PR title), seleccionando sus nombres efectivos. Exigir la revisión
+   vigente y rama actualizada, sin excepciones para la App.
+   Si la protección no está disponible por el plan, el mantenedor verifica
+   manualmente que ambos controles aprueben sobre la última revisión, que la rama
+   esté actualizada y que las notas y migraciones estén revisadas antes de fusionar.
+   El bot no aprueba ni fusiona su propia PR. La generación diaria conserva sus
+   permisos existentes; comprobar su convivencia con las reglas disponibles.
 4. Con una sesión administrativa autenticada, verificar configuración de Actions,
    acceso de la App, protecciones, tags, releases y borradores. Registrar fecha,
    nombres de controles, resultados y enlaces en un issue o PR de este repositorio.
+   Si el plan no permite proteger `main`, registrar explícitamente:
+   «Protección de main no disponible por el plan; revisión manual antes del merge».
+   Esta modalidad acordada permite continuar; no equivale a una protección activa.
    Un `401`, `403` o `404` inesperado bloquea esta comprobación: no prueba ausencia.
 5. Configurar `RELEASE_PREFLIGHT_URL` con el enlace HTTPS a esa evidencia,
    como variable del repositorio o del environment `prod`.
@@ -97,6 +103,14 @@ la App no necesita permisos administrativos adicionales. El workflow exige el
 enlace y la activación, comprueba lectura autenticada de tags/releases y squash
 merge, y falla antes de mutaciones si la autenticación no funciona. El enlace es
 una constancia administrativa, no una inspección automática de todas las reglas.
+
+Sin protección de rama, GitHub permite fusionar con controles fallidos o hacer
+push directo. El mantenedor debe respetar la revisión manual. El workflow conserva
+la validación obligatoria del SHA objetivo antes de publicar: una validación
+fallida deja el borrador sin publicar y no actualiza tags ni alias. Esa garantía
+corresponde al flujo automatizado y no impide cambios directos hechos por cuentas
+con permisos de escritura. La falta de protección por el plan no exige eliminar
+`RELEASE_PREFLIGHT_URL` ni activar anticipadamente la publicación.
 
 ### Estado inicial y bootstrap
 
